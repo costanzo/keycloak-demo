@@ -8,4 +8,10 @@ const service = axios.create({
   withCredentials: true
 })
 
+service.interceptors.response.use(response => {
+  return response.data
+}, err => {
+  return Promise.reject(err)
+})
+
 export default service

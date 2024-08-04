@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.acme</groupId>
-    <artifactId>getting-started</artifactId>
+    <artifactId>keycloak-demo-be</artifactId>
     <version>1.0.0-SNAPSHOT</version>
 
     <properties>
@@ -38,6 +38,10 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-rest-jsonb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-jackson</artifactId>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
