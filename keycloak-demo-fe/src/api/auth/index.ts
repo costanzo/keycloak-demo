@@ -11,11 +11,22 @@ export interface GetAccessTokenRsp {
   token: string
 }
 
+export interface GetSessionRsp {
+  valid: boolean
+}
+
 
 export const oauth2Authorization = async (req: GetAccessTokenReq): Promise<GetAccessTokenRsp> => {
   return request.request({
     url: '/auth/oauth2/authorization_code',
     method: 'post',
     data: req
+  })
+}
+
+export const oauth2Session = async (): Promise<GetSessionRsp> => {
+  return request.request({
+    url: '/auth/oauth2/session',
+    method: 'get',
   })
 }

@@ -1,6 +1,13 @@
 package org.acme.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.nimbusds.jose.JOSEException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.WebApplicationException;
 import org.acme.integration.model.KcAuthRsp;
+import org.acme.integration.model.UserInfoRsp;
+import org.acme.service.model.SessionState;
+import org.acme.service.model.User;
 import org.jboss.logging.Logger;
 import jakarta.enterprise.context.RequestScoped;
 import jakarta.inject.Inject;
@@ -13,78 +20,54 @@ import org.acme.integration.KeycloakService;
 import org.acme.service.model.AuthorizationCodeReq;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import static org.acme.utils.JWTUtils.parseIdToken;
+
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RequestScoped
 public class AuthResource {
     private static final Logger LOGGER = Logger.getLogger(AuthResource.class);
+
+    private static String accessToken = "";
+
     @Inject
     @RestClient
     KeycloakService keycloakService;
 
     @POST
     @Path("/oauth2/authorization_code")
-    public Object oauth2(AuthorizationCodeReq req) {
+    public Object oauth2(AuthorizationCodeReq req) throws Exception{
         LOGGER.info("req: "+req);
-        KcAuthRsp response = keycloakService.getTokenByCode("authorization_code", req.getCode(), System.getProperty("kc.client.id"), System.getProperty("kc.client.secret"));
+        KcAuthRsp response = keycloakService.getTokenByCode(
+                "authorization_code",
+                req.getCode(),
+                System.getProperty("kc.client.id"),
+                System.getProperty("kc.client.secret"),
+                "http://localhost:3000/auth/callback");
+        accessToken = response.getAccessToken();
         LOGGER.info("response: "+response);
-        return new User("Shuyi", "Sun", "abc@123.com", "tempToken");
+        User user = parseIdToken(response.getIdToken());
+        user.setToken(response.getIdToken());
+        LOGGER.info("user: "+user);
+        return user;
     }
 
-    public static class User {
-        String lastName;
-        String firstName;
-        String email;
-        String token;
-
-        public User(String lastName, String firstName, String email, String token) {
-            this.lastName = lastName;
-            this.firstName = firstName;
-            this.email = email;
-            this.token = token;
+    @GET
+    @Path("/oauth2/session")
+    public Object session() {
+        try {
+            UserInfoRsp response = keycloakService.getUserInfo("Bearer " + accessToken);
+            LOGGER.info("response: " + response);
+            return new SessionState();
+        } catch (WebApplicationException e) {
+            LOGGER.error("Error: ", e);
+            if (e.getResponse().getStatus() == 401) {
+                return new SessionState(false);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Error: ", e);
         }
-
-        public String getLastName() {
-            return lastName;
-        }
-
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        public String getFirstName() {
-            return firstName;
-        }
-
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        public String getEmail() {
-            return email;
-        }
-
-        public void setEmail(String email) {
-            this.email = email;
-        }
-
-        public String getToken() {
-            return token;
-        }
-
-        public void setToken(String token) {
-            this.token = token;
-        }
-
-        @Override
-        public String toString() {
-            return "User{" +
-                    "lastName='" + lastName + '\'' +
-                    ", firstName='" + firstName + '\'' +
-                    ", email='" + email + '\'' +
-                    ", token='" + token + '\'' +
-                    '}';
-        }
+        return new SessionState();
     }
 }
