@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthorizationCodeReq {
-    private String code;
+public class StateGenerationRsp {
     private String state;
 }

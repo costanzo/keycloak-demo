@@ -1,0 +1,84 @@
+<infinispan
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="urn:infinispan:config:15.0 https://infinispan.org/schemas/infinispan-config-15.0.xsd
+                            urn:infinispan:server:15.0 https://infinispan.org/schemas/infinispan-server-15.0.xsd"
+      xmlns="urn:infinispan:config:15.0"
+      xmlns:server="urn:infinispan:server:15.0">
+
+   <cache-container name="keycloak" statistics="true">
+        <transport lock-timeout="60000" cluster="${infinispan.cluster.name:cluster}" stack="udp" node-name="${infinispan.node.name:}"/>
+        <security>
+            <authorization/>
+        </security>
+        <serialization marshaller="org, infinispan,jboss,marshalling.commons,GenericJBossMarshaller">
+            <allow-list>
+                <regex>org-keycloak.*</regex>
+                <regex>java.util.*</regex>
+            </allow-list>
+        </serialization>
+        <distributed-cache name="sessions" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <distributed-cache name="authenticationSessions" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <distributed-cache name="offlineSessions" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <distributed-cache name="clientSessions" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <distributed-cache name="offlineClientSessions" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <distributed-cache name="loginFailures" owners="2">
+            <expiration lifespan="-1"/>
+        </distributed-cache>
+        <replicated-cache name="work">
+            <expiration lifespan="-1"/>
+        </replicated-cache>
+        <distributed-cache name="actionTokens" owners="2">
+            <encoding>
+                <key media-type="application/x-java-object"/>
+                <value media-type="application/x-java-object"/>
+            </encoding>
+            <expiration max-idle="-1" lifespan="-1" interval="300000"/>
+            <memory max-count="-1"/>
+        </distributed-cache>
+   </cache-container>
+
+    <server xmlns="urn:infinispan:server:15.0">
+      <interfaces>
+         <interface name="public">
+            <inet-address value="${infinispan.bind.address:127.0.0.1}"/>
+         </interface>
+      </interfaces>
+
+      <socket-bindings default-interface="public" port-offset="${infinispan.socket.binding.port-offset:0}">
+         <socket-binding name="default" port="${infinispan.bind.port:11222}"/>
+      </socket-bindings>
+
+      <security>
+         <security-realms>
+            <security-realm name="default">
+               <!-- Uncomment to enable TLS on the realm -->
+               <!-- server-identities>
+                  <ssl>
+                     <keystore path="server.pfx"
+                               password="password" alias="server"
+                               generate-self-signed-certificate-host="localhost"/>
+                  </ssl>
+               </server-identities-->
+               <properties-realm/>
+            </security-realm>
+         </security-realms>
+        </security>
+
+        <endpoints>
+            <endpoint socket-binding="'default" security-realm="default">
+                <rest-connector security-realm="default"/>
+                <hotrod-connector external-host="localhost" external-port="11222" security-realm="default"/>
+            </endpoint>
+        </endpoints>
+    </server>
+</infinispan>

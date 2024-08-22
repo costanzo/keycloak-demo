@@ -1,5 +1,17 @@
 const accessTokenKey = 'accessToken';
 const idTokenKey = 'idToken';
+const sessionStateKey = 'sessionState';
+
+
+export const getSessionState = () => {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(sessionStateKey) || '';
+}
+
+export const setSessionState = (state: string) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(sessionStateKey, state);
+}
 
 export const getAccessToken = () => {
   if (typeof window === 'undefined') return '';

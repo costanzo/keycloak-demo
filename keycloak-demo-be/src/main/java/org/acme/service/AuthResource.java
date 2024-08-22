@@ -7,6 +7,7 @@ import jakarta.ws.rs.WebApplicationException;
 import org.acme.integration.model.KcAuthRsp;
 import org.acme.integration.model.UserInfoRsp;
 import org.acme.service.model.SessionState;
+import org.acme.service.model.StateGenerationRsp;
 import org.acme.service.model.User;
 import org.jboss.logging.Logger;
 import jakarta.enterprise.context.RequestScoped;
@@ -21,6 +22,7 @@ import org.acme.service.model.AuthorizationCodeReq;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 import static org.acme.utils.JWTUtils.parseIdToken;
+import static org.acme.utils.RandomUtils.generateState;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
@@ -30,15 +32,26 @@ public class AuthResource {
     private static final Logger LOGGER = Logger.getLogger(AuthResource.class);
 
     private static String accessToken = "";
+    private static String state = "";
 
     @Inject
     @RestClient
     KeycloakService keycloakService;
 
     @POST
+    @Path("/oauth2/state")
+    public Object state() {
+        state = generateState();
+        return new StateGenerationRsp(state);
+    }
+
+    @POST
     @Path("/oauth2/authorization_code")
     public Object oauth2(AuthorizationCodeReq req) throws Exception{
         LOGGER.info("req: "+req);
+        if (!req.getState().equals(state)) {
+            throw new WebApplicationException("Invalid state", 400);
+        }
         KcAuthRsp response = keycloakService.getTokenByCode(
                 "authorization_code",
                 req.getCode(),

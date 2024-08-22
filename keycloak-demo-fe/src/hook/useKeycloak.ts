@@ -1,36 +1,37 @@
 import {useEffect, useRef} from "react";
 import {getAccessToken} from "@/store/auth";
-import {GetSessionRsp, oauth2Session} from "@/api/auth";
+import {GetSessionRsp, oauth2Session, oauth2State, StateRsp} from "@/api/auth";
 
 const useKeycloak = () => {
   const sessionIntervalRef = useRef<NodeJS.Timeout>()
   useEffect(() => {
-    if (typeof window === 'undefined') return null;
+    if (typeof window === 'undefined') return;
     const accessToken = getAccessToken();
     if (accessToken === '') {
-      const state = Math.random().toString(36).substring(7);
-      const url = 'http://localhost:8080/realms/demo/protocol/openid-connect/auth?client_id=nextjs-demo&response_type=code' +
-        "&redirect_uri=" + encodeURIComponent(window.location.href+'auth/callback') + "&state=" + state + "&scope=openid"
-      console.log(url)
-      window.location.href = url;
+      oauth2State().then((rsp: StateRsp) => {
+        const url = 'http://localhost:8080/realms/demo/protocol/openid-connect/auth?client_id=nextjs-demo&response_type=code' +
+          "&redirect_uri=" + encodeURIComponent(window.location.href+'auth/callback') + "&state=" + rsp.state + "&scope=openid"
+        console.log(url)
+        window.location.href = url;
+      })
     } else {
       // check session
-      console.log('start checking session')
-      sessionIntervalRef.current = setInterval(() => {
-        console.log('check session')
-        oauth2Session().then((rsp: GetSessionRsp )=> {
-          console.log('session rsp', rsp)
-          if (!rsp.valid) {
-            // logout
-            window.location.href = '/logout'
-          }
-        });
-      }, 10000)
+      // console.log('start checking session')
+      // sessionIntervalRef.current = setInterval(() => {
+      //   console.log('check session')
+      //   oauth2Session().then((rsp: GetSessionRsp )=> {
+      //     console.log('session rsp', rsp)
+      //     if (!rsp.valid) {
+      //       // logout
+      //       window.location.href = '/logout'
+      //     }
+      //   });
+      // }, 10000)
     }
     return () => {
-      if (sessionIntervalRef.current) {
-        clearInterval(sessionIntervalRef.current)
-      }
+      // if (sessionIntervalRef.current) {
+      //   clearInterval(sessionIntervalRef.current)
+      // }
     }
   },[])
 
