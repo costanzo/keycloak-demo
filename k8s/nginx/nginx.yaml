@@ -17,7 +17,13 @@ spec:
         image: nginx:1.16.1
         ports:
         - containerPort: 80
-        resources: {}
+        resources: 
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
         volumeMounts:
         - mountPath: /etc/nginx/nginx.conf
           name: nginx-conf

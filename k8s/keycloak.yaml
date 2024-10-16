@@ -9,6 +9,9 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+    - name: metrics
+      port: 9000
+      targetPort: 9000
   selector:
     app: keycloak
   type: ClusterIP
@@ -44,10 +47,42 @@ spec:
               value: "kc.k8s.local"
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
+            - name: KC_METRICS_ENABLED
+              value: "true"
+            - name: KC_HEALTH_ENABLED
+              value: "true"
           ports:
             - name: http
               containerPort: 8080
+            - name: metrics
+              containerPort: 9000
           readinessProbe:
             httpGet:
-              path: /realms/master
-              port: 8080
+              path: /health/ready
+              port: 9000
+          livenessProbe:
+            httpGet:
+              path: /health/live
+              port: 9000
+            initialDelaySeconds: 20
+          resources:
+            limits:
+              memory: "2Gi"
+              cpu: "1"
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: keycloak-servicemonitor
+  labels:
+    app: keycloak-servicemonitor
+spec:
+  selector:
+    matchLabels:
+      app: keycloak
+  endpoints:
+    - port: metrics
+      interval: 15s
